@@ -197,6 +197,7 @@ class Ui_MainWindow(QMainWindow, Ui_MainWindow):
             print('     ★★★★★')
 
             self.statusbar.clearMessage()
+            self.listWidget.clear()
             self.listWidget_2.clear()
             keys = list(info.keys())
             print(keys)
