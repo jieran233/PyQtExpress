@@ -1,23 +1,27 @@
-import configparser
-import json
-import os
 import sys
 import time
-# from bp import bp
-from threading import Thread
-from subprocess import PIPE, Popen
-
 import requests
+import json
+# 读写INI
+import configparser
+# 执行系统命令
+from subprocess import PIPE, Popen
+# from bp import bp
+# 多线程
+from threading import Thread
+# 结束线程
+import ctypes
+import inspect
+# PyQt5
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from qt_material import apply_stylesheet
+from mainWindow import *
+
+# Win10 toast通知
 # from win10toast import ToastNotifier
+# 播放提示音
 # from playsound import playsound
 # import winsound
-
-import inspect
-import ctypes
-
-from mainWindow import *
 
 
 class Ui_MainWindow(QMainWindow, Ui_MainWindow):
