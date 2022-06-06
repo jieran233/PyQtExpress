@@ -82,6 +82,7 @@ class Ui_MainWindow(QMainWindow, Ui_MainWindow):
         code = 0
         i = 0
         dic = {}
+        maxRetry = 3  # 最大重试次数
         while code != 200:
             response = requests.get(
                 url + '?number=' + str(number) + '&com=' + com + '&order=' + order + '&token=' + TOKEN,
@@ -95,7 +96,10 @@ class Ui_MainWindow(QMainWindow, Ui_MainWindow):
             i = i + 1
             if i > 1:
                 self.statusbar.showMessage('API返回失败的消息，正在进行第' + str(i - 1) + '次重试...')
-                time.sleep(3)  # 冷却CD，防止无限重试
+                time.sleep(3)  # 冷却CD
+            if i > maxRetry:
+                dic = {'code': 200, 'msg': 'success', 'data': {'nu': '0', 'com': 'none', 'state': 0, 'info': [{'content': ':( 请求失败了', 'time': ''}, {'content': '', 'time': ''}, {'content': '可能的原因及解决方法:', 'time': ''}, {'content': '- API尚未收录运单信息，请稍后重试', 'time': ''}, {'content': '- QPS超过限制，请稍后重试', 'time': ''}, {'content': '- API服务器维护/故障，稍后重试或查看API官网公告 http://www.alapi.cn/', 'time': ''}, {'content': '- 运单号无效/快递公司与运单号不对应，请核实后重试', 'time': ''}]}, 'time': 0, 'log_id': 0}
+                break
         return dic['data']['info']
 
     def listItemClicked(self, item):
