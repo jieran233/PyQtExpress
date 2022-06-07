@@ -98,7 +98,7 @@ class Ui_MainWindow(QMainWindow, Ui_MainWindow):
                 self.statusbar.showMessage('API返回失败的消息，正在进行第' + str(i - 1) + '次重试...')
                 time.sleep(3)  # 冷却CD
             if i > maxRetry:
-                dic = {'code': 200, 'msg': 'success', 'data': {'nu': '0', 'com': 'none', 'state': 0, 'info': [{'content': ':( 请求失败了', 'time': ''}, {'content': '', 'time': ''}, {'content': '可能的原因及解决方法:', 'time': ''}, {'content': '- API尚未收录运单信息，请稍后重试', 'time': ''}, {'content': '- QPS超过限制，请稍后重试', 'time': ''}, {'content': '- API服务器维护/故障，稍后重试或查看API官网公告 http://www.alapi.cn/', 'time': ''}, {'content': '- 运单号无效/快递公司与运单号不对应，请核实后重试', 'time': ''}]}, 'time': 0, 'log_id': 0}
+                dic = {'code': 200, 'msg': 'success', 'data': {'nu': '0', 'com': 'none', 'state': 0, 'info': [{'content': ':( 请求失败了', 'time': ''}, {'content': '', 'time': ''}, {'content': '可能的原因及解决方法:', 'time': ''}, {'content': '- 包裹正在等待揽收，API尚未收录，请稍后重试', 'time': ''}, {'content': '- QPS超过限制，请稍后重试', 'time': ''}, {'content': '- API服务器维护/故障，稍后重试或查看API官网公告 http://www.alapi.cn/', 'time': ''}, {'content': '- 运单号无效/快递公司与运单号不对应，请核实后重试', 'time': ''}]}, 'time': 0, 'log_id': 0}
                 break
         return dic['data']['info']
 
