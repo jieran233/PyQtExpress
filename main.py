@@ -2,21 +2,22 @@ import sys
 import time
 import requests
 import json
-# 读写INI
-import configparser
-# 执行系统命令
-from subprocess import PIPE, Popen
+import configparser  # 读写INI
+from subprocess import PIPE, Popen  # 执行系统命令
 # from bp import bp
-# 多线程
-from threading import Thread
+from threading import Thread  # 多线程
 # 结束线程
 import ctypes
 import inspect
 # PyQt5
 from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5.QtCore import Qt
 from qt_material import apply_stylesheet
 from mainWindow import *
-
+import wmi  # WMI 查询系统版本
+from win32mica import MICAMODE, ApplyMica  # Win11 Mica
+import my_window_effect  # Win10 Acrylic & Win7 Aero
+import darkdetect  # Auto mode detect
 # Win10 toast通知
 # from win10toast import ToastNotifier
 # 播放提示音
@@ -89,6 +90,7 @@ class Ui_MainWindow(QMainWindow, Ui_MainWindow):
                 headers=headers)
             dic = json.loads(response.text)  # 解码 JSON 数据
             code = dic['code']  # 请求状态码
+            # code = 114514  # debug only
             print('code=' + str(code))
             print('----------------')
             print(dic)
@@ -98,7 +100,7 @@ class Ui_MainWindow(QMainWindow, Ui_MainWindow):
                 self.statusbar.showMessage('API返回失败的消息，正在进行第' + str(i - 1) + '次重试...')
                 time.sleep(3)  # 冷却CD
             if i > maxRetry:
-                dic = {'code': 200, 'msg': 'success', 'data': {'nu': '0', 'com': 'none', 'state': 0, 'info': [{'content': ':( 请求失败了', 'time': ''}, {'content': '', 'time': ''}, {'content': '可能的原因及解决方法:', 'time': ''}, {'content': '- 包裹正在等待揽收，API尚未收录，请稍后重试', 'time': ''}, {'content': '- QPS超过限制，请稍后重试', 'time': ''}, {'content': '- API服务器维护/故障，稍后重试或查看API官网公告 http://www.alapi.cn/', 'time': ''}, {'content': '- 运单号无效/快递公司与运单号不对应，请核实后重试', 'time': ''}]}, 'time': 0, 'log_id': 0}
+                dic = {'code': 200, 'msg': 'success', 'data': {'nu': '0', 'com': 'none', 'state': 0, 'info': [{'content': ':( 请求失败了', 'time': ''}, {'content': '', 'time': ''}, {'content': '可能的原因及解决方法:', 'time': ''}, {'content': '- 包裹正在等待揽收，API尚未收录，请稍后重试', 'time': ''}, {'content': '- QPS超过限制，请稍后重试', 'time': ''}, {'content': '- API服务器维护/故障，稍后重试或查看API官网公告 http://www.alapi.cn/', 'time': ''}, {'content': '- 运单号无效/快递公司与运单号不对应，请核实后重试', 'time': ''}, {'content': '[点击重试  Click here to try again]', 'time': ''},]}, 'time': 0, 'log_id': 0}
                 break
         return dic['data']['info']
 
@@ -113,6 +115,11 @@ class Ui_MainWindow(QMainWindow, Ui_MainWindow):
             for i in range(0, len(info[itext])):
                 self.listWidget_2.addItem(info[itext][i]['time'] + ' ' + info[itext][i]['content'])
             self.statusbar.showMessage('#包裹['+itext+']的最新消息# ' + info[itext][0]['time'] + ' ' + info[itext][0]['content'])
+        elif name == "listWidget_2":
+            itext = item.text()
+            print(itext)
+            if itext == ' ' + '[点击重试  Click here to try again]':
+                self.main(True)
 
     def closeEvent(self, event):
         """
@@ -159,7 +166,21 @@ class Ui_MainWindow(QMainWindow, Ui_MainWindow):
     #         filename = 'notification.wav'
     #         winsound.PlaySound(filename, winsound.SND_FILENAME)
 
-    def main(self):
+    def winver(self):
+        w = wmi.WMI()
+        os_info = w.Win32_OperatingSystem()[0]
+        os_name = os_info.Name.encode('utf8').split(b'|')[0]
+        obj = w.Win32_ComputerSystem()[0]
+        # 解决乱码 参考资料https://cloud.tencent.com/developer/article/1737555
+        # 字符串类str有一个encode() 方法，它是字符串向比特流的编码过程。
+        # bytes类则有一个decode() 方法，它是比特流向字符串的解码过程。
+        # 要解决的问题是将bytes类型的内容以汉字的形式输出，但是该部分内容是字符串类型。因此首先需要将该str转换成bytes类型，再decode解码为str输出。
+        # 方法补充：如果我们直接定义bytes类型的变量，也可以直接使用str(s, ‘utf8′)的方式输出汉字
+        os_name = str(os_name, 'utf8')
+        os_name_ = os_name.split(' ')
+        return os_name_[2]
+
+    def main(self, notRepeat=False):
         print('\n')
         packs = self.load()
         print("packs:")
@@ -183,7 +204,7 @@ class Ui_MainWindow(QMainWindow, Ui_MainWindow):
 
         # 单击触发绑定的槽函数
         self.listWidget.itemClicked.connect(self.listItemClicked)
-
+        self.listWidget_2.itemClicked.connect(self.listItemClicked)
         self.listWidget_2.addItem('Loading...')
 
         while True:
@@ -229,6 +250,8 @@ class Ui_MainWindow(QMainWindow, Ui_MainWindow):
             #     self.listWidget_2.addItem(infos[i]['time'] + ' ' + infos[i]['content'])
             interval = self.spinBox.value()
             print(interval)
+            if notRepeat == True:
+                return
             time.sleep(interval)
 
 
@@ -253,9 +276,29 @@ def stop_thread(thread):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    # 实例化类
+    mainWindow = Ui_MainWindow()
     # setup stylesheet
     apply_stylesheet(app, theme='dark_teal.xml')
-    mainWindow = Ui_MainWindow()
+    # 窗口效果
+    winver = mainWindow.winver()
+    # winver = '10'
+    if winver == '11':  # Win11 Mica
+        # 必须用样式表使背景透明，别用 setAttribute(Qt.WA_TranslucentBackground)，不然界面会卡顿
+        mainWindow.setStyleSheet("background:transparent")
+        hwnd = mainWindow.winId().__int__()  # On a PyQt/PySide window
+        # mode = darkdetect.isDark()
+        mode = MICAMODE.DARK  # Dark mode mica effect
+        ApplyMica(hwnd, mode)
+    elif winver == '10':  # Win10 Acrylic
+        mainWindow.setStyleSheet("background:transparent")
+        mainWindow.windowEffect = my_window_effect.WindowEffect()
+        mainWindow.windowEffect.setAcrylicEffect(int(mainWindow.winId()))
+    elif winver == '7' or mainWindow.winver().lower() == 'vista':  # Win7 Aero
+        mainWindow.setStyleSheet("background:transparent")
+        mainWindow.windowEffect = my_window_effect.WindowEffect()
+        mainWindow.windowEffect.setAeroEffect(int(mainWindow.winId()))
+
     mainWindow.show()
 
     thread_01 = Thread(target=mainWindow.main)
